@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
-from chat import send_message_to_ai
+from chat import send_message_to_ai, reset_chat
 
 router = APIRouter()
 
@@ -16,3 +16,8 @@ async def invoke(item: User_message):
     
     return StreamingResponse(stream(), media_type="text/event-stream")
     
+
+@router.post("/reset")
+async def reset():
+    reset_chat()
+    return {"status": "ok"}

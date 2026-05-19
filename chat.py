@@ -39,3 +39,10 @@ def send_message_to_ai(user_msg):
             yield piece
 
     messages.append({"role": "assistant", "content": full_answer})
+
+def reset_chat():
+    global messages 
+    messages=[
+            {"role": "system", "content": sys_message}
+        ]
+    return
