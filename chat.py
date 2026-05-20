@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from sys_msg import sys_message
 import os
 import tiktoken
+import logging
 load_dotenv()
 
 # connection to openai api
@@ -26,26 +27,31 @@ def send_message_to_ai(user_msg):
     user_message = {"role": "user", "content": user_msg}
     messages.append(user_message)
 
-    ai_response_stream = client.chat.completions.create(
-        model="gpt-4.1-mini",
-        messages=messages,
-        stream=True,
-    )
-    
-    prompt_tokens = sum(count_tokens(m["content"]) for m in messages)       # it uses the messages as context which are part of the prompt
+    try:
+        ai_response_stream = client.chat.completions.create(
+            model="gpt-4.1-mini",
+            messages=messages,
+            stream=True,
+        )
+        
+        prompt_tokens = sum(count_tokens(m["content"]) for m in messages)       # it uses the messages as context which are part of the prompt
 
-    full_answer = ""
-    for chunk in ai_response_stream:
-        if chunk.choices and chunk.choices[0].delta.content is not None:    # some chunks can have empty choices
-            piece = chunk.choices[0].delta.content
-            full_answer += piece
-            yield piece
+        full_answer = ""
+        for chunk in ai_response_stream:
+            if chunk.choices and chunk.choices[0].delta.content is not None:    # some chunks can have empty choices
+                piece = chunk.choices[0].delta.content
+                full_answer += piece
+                yield piece
 
-    completion_tokens = count_tokens(full_answer)
-    total_tokens = prompt_tokens + completion_tokens
+        completion_tokens = count_tokens(full_answer)
+        total_tokens = prompt_tokens + completion_tokens
 
-    yield f"__TOKENS__{prompt_tokens},{completion_tokens},{total_tokens}"
-    messages.append({"role": "assistant", "content": full_answer})
+        yield f"__TOKENS__{prompt_tokens},{completion_tokens},{total_tokens}"
+        messages.append({"role": "assistant", "content": full_answer})
+    except Exception as e:
+        logging.error(f"OpenAI call failed: {e}")
+        raise
+        
 
 def reset_chat():
     global messages 
