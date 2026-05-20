@@ -2,6 +2,7 @@ from openai import OpenAI
 from dotenv import load_dotenv
 from sys_msg import sys_message
 import os
+import tiktoken
 load_dotenv()
 
 # connection to openai api
@@ -30,14 +31,20 @@ def send_message_to_ai(user_msg):
         messages=messages,
         stream=True,
     )
+    
+    prompt_tokens = sum(count_tokens(m["content"]) for m in messages)       # it uses the messages as context which are part of the prompt
 
     full_answer = ""
     for chunk in ai_response_stream:
-        piece = chunk.choices[0].delta.content
-        if piece is not None :
+        if chunk.choices and chunk.choices[0].delta.content is not None:    # some chunks can have empty choices
+            piece = chunk.choices[0].delta.content
             full_answer += piece
             yield piece
 
+    completion_tokens = count_tokens(full_answer)
+    total_tokens = prompt_tokens + completion_tokens
+
+    yield f"__TOKENS__{prompt_tokens},{completion_tokens},{total_tokens}"
     messages.append({"role": "assistant", "content": full_answer})
 
 def reset_chat():
@@ -46,3 +53,7 @@ def reset_chat():
             {"role": "system", "content": sys_message}
         ]
     return
+
+def count_tokens(text: str) -> int:
+    encoding = tiktoken.get_encoding("cl100k_base")
+    return len(encoding.encode(text))

@@ -27,6 +27,7 @@ async def root():
             </div>
 
             <div id="inputFooter">
+                <p id="tokenUsage"></p>
                 <input type="text" id="userInput" placeholder="Write your message">
                 <button onclick="sendMessage()">Send</button>
             </div>
@@ -65,7 +66,12 @@ async def root():
                     const chunkText = decoder.decode(value, { stream: true });
                     const lines = chunkText.split("\\n")                        // parse the SSE format
                     for (const line of lines){
-                        if (line.startsWith("data: ")) {
+                        if (line.startsWith("data: __TOKENS__")) {
+                            const tokenData = line.replace("data: __TOKENS__", "").split(",")
+                            document.getElementById("tokenUsage").innerHTML = 
+                                `Prompt: ${tokenData[0]} | Completion: ${tokenData[1]} | Total: ${tokenData[2]}`
+                        }
+                        else if(line.startsWith("data: ")) {
                             const text = line.replace("data: ", "")
                             aiMsg.innerHTML += text
                         }
@@ -76,6 +82,7 @@ async def root():
             async function restartChat(){
                 await fetch("/reset", { method: "POST" })
                 document.getElementById("chatWindow").innerHTML = "";
+                document.getElementById("tokenUsage").innerHTML = "";
             }
 
             document.addEventListener("keydown", function(event) {
