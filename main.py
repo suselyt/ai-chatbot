@@ -32,7 +32,7 @@ async def root():
             </div>
                 
             <div class="flex-1 overflow-y-auto flex flex-col">
-                <div id="chatWindow" class="p-4 w-3/5 mx-auto text-white flex flex-col">
+                <div id="chatWindow" class="flex-1 p-4 w-3/5 mx-auto text-white flex flex-col">
                     <div id="welcome-section" class="flex-1 flex flex-col items-center justify-center text-center max-w-md mx-auto gap-4">
                         <i class="fa-solid fa-robot text-6xl text-pink-300"></i>
                         <h2 class="text-2xl font-semibold">Chat-code</h2>
@@ -53,6 +53,7 @@ async def root():
 
             <script>
             async function sendMessage(){
+                scrollToBottom()
                 const input = document.getElementById("userInput")
                 const message = input.value
                 const chatWindow = document.getElementById("chatWindow")
@@ -97,6 +98,15 @@ async def root():
                 aiMsg.firstElementChild.appendChild(bubble)
                 chatWindow.appendChild(aiMsg)
 
+                const typingIndicator = document.createElement("div")           // while the ai is answering
+                typingIndicator.id = "typingIndicator"
+                typingIndicator.classList.add("flex", "gap-1", "items-center", "py-1")
+                typingIndicator.innerHTML = `
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>`
+                bubble.appendChild(typingIndicator)
+
                 try{
                     const response = await fetch("/send_message", 
                     {
@@ -137,8 +147,13 @@ async def root():
                                 aiMsg.firstElementChild.appendChild(tokenToggle)
                             }
                             else if(line.startsWith("data: ")) {
+                                const indicator = document.getElementById("typingIndicator")            // removes the dots typing
+                                if (indicator) indicator.remove()
+
                                 const text = line.replace("data: ", "")
                                 bubble.innerHTML += text
+
+                                scrollToBottom()
                             }
                         }                 
                     }
@@ -152,6 +167,11 @@ async def root():
 
             function getTime(){
                 return new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})
+            }
+
+            function scrollToBottom(){
+                const scroller = document.querySelector(".overflow-y-auto")
+                scroller.scrollTop = scroller.scrollHeight
             }
 
             async function restartChat(){
