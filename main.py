@@ -10,10 +10,6 @@ app = FastAPI(title="Programming Basics AI-Chatbot",
 app.include_router(router)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# TO DO: show js with the errors (not being able to process request, chat empty...)
-# TO DO: add visual feedback while the AI is answering
-# TO DO: fix to show markdown correctly 
-# TO DO: add the alt text to show when hovering over a button
 @app.get("/", response_class=HTMLResponse)
 async def root():
     return """
@@ -23,11 +19,12 @@ async def root():
             <script src="https://cdn.tailwindcss.com"></script>
             <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
             <link rel="stylesheet" href="/static/styles.css">
+            <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
         </head>
         <body class="flex flex-col h-screen bg-gray-900">
             <div id="header" class="flex justify-between py-4 px-5 text-white">
                 <h1 class="text-lg font-semibold"><i class="fa-solid fa-code"></i> Ask Chat anything!</h1>
-                <button onclick="restartChat()" class="cursor-pointer px-2 py-1 border border-gray-600 rounded-sm text-sm"><i class="fa-solid fa-arrow-rotate-right"></i> Restart</button>
+                <button onclick="restartChat()" title="Restart conversation" aria-label="Restart conversation" class="cursor-pointer px-2 py-1 border border-gray-600 rounded-sm text-sm"><i class="fa-solid fa-arrow-rotate-right"></i> Restart</button>
                 <!-- TO DO: add a dark and light theme switch -->
             </div>
                 
@@ -43,12 +40,13 @@ async def root():
 
             <div id="inputFooter" class="flex py-6 px-5 place-content-center gap-4">
                 <textarea 
-                    id="userInput" 
+                    id="userInput"
+                    aria-label="Message input" 
                     placeholder="Write your message" 
                     rows="1"
                     class="rounded-2xl bg-gray-700 text-white px-4 py-2 w-3/5 resize-none overflow-hidden max-h-24"
                 ></textarea>
-                <button id="sendButton" disabled onclick="sendMessage()" class="disabled:opacity-50 focus:ring-2 bg-white cursor-pointer rounded-full p-3"><i class="fa-solid fa-paper-plane"></i></button>
+                <button id="sendButton" title="Send message" aria-label="Send message" disabled onclick="sendMessage()" class="disabled:opacity-50 focus:ring-2 bg-white cursor-pointer rounded-full p-3"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
 
             <script>
@@ -63,7 +61,10 @@ async def root():
                     welcomeSection.remove()
                 }
 
-                if (!message.trim()) return
+                if (!message.trim()) {
+                    showToast("Please write a message first", "warning")
+                    return
+                }
 
                 sendButton.disabled = true;                              // disables to send more messages
                 const userMsg = document.createElement("div")            // user message
@@ -121,6 +122,7 @@ async def root():
 
                     const reader = response.body.getReader();
                     const decoder = new TextDecoder("utf-8");
+                    let fullResponse = ""
 
                     while (true){
                         const { done, value } = await reader.read()
@@ -151,15 +153,18 @@ async def root():
                                 if (indicator) indicator.remove()
 
                                 const text = line.replace("data: ", "")
-                                bubble.innerHTML += text
-
+                                fullResponse += text
+                                bubble.textContent = fullResponse
                                 scrollToBottom()
                             }
                         }                 
                     }
+                    bubble.innerHTML = marked.parse(fullResponse)
+                    scrollToBottom()
                 } catch(error){
                     console.error("API call failed:", error.message)
-                    aiMsg.innerHTML += "Something went wrong. Please try again."
+                    showToast("Could not reach the server. Try again later", "error")
+                    bubble.innerHTML = "<span class='text-red-400'>Request failed</span>"
                 } finally {
                     sendButton.disabled = false                                         // finally always runs, error or not
                 }
@@ -172,6 +177,26 @@ async def root():
             function scrollToBottom(){
                 const scroller = document.querySelector(".overflow-y-auto")
                 scroller.scrollTop = scroller.scrollHeight
+            }
+
+            function showToast(message, type = "error", duration = 3000){
+                const existing = document.getElementById("toast")
+                if (existing) existing.remove()
+
+                const toast = document.createElement("div")
+                toast.id = "toast"
+                toast.classList.add("toast", type)
+                toast.textContent = message
+                document.body.appendChild(toast)
+
+                requestAnimationFrame(() => {
+                    toast.classList.add("show")
+                })
+
+                setTimeout(() => {
+                    toast.classList.remove("show")
+                    setTimeout(() => toast.remove(), 300)  // wait for fade out
+                }, duration)
             }
 
             async function restartChat(){
