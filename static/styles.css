@@ -1,0 +1,21 @@
+/* ----- SCROLLBAR STYLES ------ */
+/* width */
+::-webkit-scrollbar {
+    width: 4px;
+}
+
+/* track (background) */
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* handle (the draggable bar) */
+::-webkit-scrollbar-thumb {
+    background: #4b5563;
+    border-radius: 999px;
+}
+
+/* handle on hover */
+::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+}
