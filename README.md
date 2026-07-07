@@ -132,9 +132,24 @@ ai-chatbot/
 # Screenshots
 
 - Home screen
+<p>
+  <img src="docs/interface.png" alt="Interface image" width="600">
+</p>
+
 - Active conversation
+<p>
+  <img src="docs/message.png" alt="Interface image" width="600">
+</p>
+
 - Toast Notification
+<p>
+  <img src="docs/toast-notification.png" alt="Interface image" width="600">
+</p>
+
 - Token usage example
+<p>
+  <img src="docs/token-usage.png" alt="Interface image" width="600">
+</p>
 
 ---
 
